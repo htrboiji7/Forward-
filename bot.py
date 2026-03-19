@@ -5,7 +5,7 @@ from threading import Thread
 
 API_ID = int(os.environ.get("API_ID", 0))
 API_HASH = os.environ.get("API_HASH", "")
-BOT_TOKEN = "8691919634:AAFQNseFq2gC-MLzGZXD17soiGX3nER1MKQ"
+BOT_TOKEN = os.environ.get("BOT_TOKEN", "")
 ADMIN_ID = 8357928315
 
 web_app = Flask(__name__)
