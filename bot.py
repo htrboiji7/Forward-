@@ -1,5 +1,6 @@
 import os
 import pymongo
+import asyncio
 from pyrogram import Client, filters
 from flask import Flask
 from threading import Thread
@@ -8,8 +9,10 @@ from threading import Thread
 API_ID = int(os.environ.get("API_ID", 0))
 API_HASH = os.environ.get("API_HASH", "")
 BOT_TOKEN = os.environ.get("BOT_TOKEN", "")
-ADMIN_ID = 8357928315 # Tera ID
-MONGO_URL = os.environ.get("MONGO_URL", "") # Naya: MongoDB ka URL yahan aayega
+MONGO_URL = os.environ.get("MONGO_URL", "")
+
+# 👇 DONO ADMINS KI ID YAHAN SET HAI
+ADMIN_IDS = [8357928315, 1849178309]
 
 # --- MONGODB SETUP ---
 mongo_client = pymongo.MongoClient(MONGO_URL)
@@ -20,7 +23,7 @@ web_app = Flask(__name__)
 
 @web_app.route('/')
 def home():
-    return "Bot is Alive and DB is Connected!"
+    return "Bot is Alive and DB is Connected! Multi-Admin is Active."
 
 def run_server():
     web_app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
@@ -38,10 +41,11 @@ async def welcome_and_save(client, message):
             if not groups_col.find_one({"chat_id": chat_id}):
                 groups_col.insert_one({"chat_id": chat_id})
                 
-            await client.send_message(ADMIN_ID, f"✅ Bot Added & Saved to DB!\n\nName: {message.chat.title}\nID: `{chat_id}`")
+            # Notification sirf tere Main Account (8357928315) pe aayegi taaki spam na ho
+            await client.send_message(ADMIN_IDS[0], f"✅ Bot Added & Saved to DB!\n\nName: {message.chat.title}\nID: `{chat_id}`")
 
-# 2. EMERGENCY WAKEUP COMMAND (Taki purane groups wapas save ho jaye)
-@app.on_message(filters.command("wake") & filters.user(ADMIN_ID))
+# 2. EMERGENCY WAKEUP COMMAND (Dono admin use kar sakte hain)
+@app.on_message(filters.command("wake") & filters.user(ADMIN_IDS))
 async def wake_up(client, message):
     chat_id = message.chat.id
     if not groups_col.find_one({"chat_id": chat_id}):
@@ -50,14 +54,13 @@ async def wake_up(client, message):
     else:
         msg = await message.reply_text("⚠️ Already in Database.")
     
-    # 3 second baad message delete taaki kisi ko shak na ho
-    import asyncio
+    # 3 second baad message delete taaki kisi group admin ko shak na ho
     await asyncio.sleep(3)
     await msg.delete()
     await message.delete()
 
-# 3. THE BROADCASTER (Ab DB se data uthayega)
-@app.on_message(filters.command("bcast") & filters.user(ADMIN_ID))
+# 3. THE BROADCASTER (Dono admin use kar sakte hain)
+@app.on_message(filters.command("bcast") & filters.user(ADMIN_IDS))
 async def broadcast_message(client, message):
     if not message.reply_to_message:
         return await message.reply_text("⚠️ Reply to a message with /bcast")
@@ -66,7 +69,7 @@ async def broadcast_message(client, message):
     groups = list(groups_col.find({}))
     
     if not groups:
-        return await message.reply_text("❌ No groups found in Database!")
+        return await message.reply_text("❌ No groups found in Database! Pehle /wake command use karo.")
 
     status_msg = await message.reply_text(f"🚀 Broadcasting to {len(groups)} groups...")
 
